@@ -9,6 +9,8 @@ import math
 from collections import namedtuple
 import time
 
+fileName = "../datasample1.mov"
+
 motionThreshold = 10
 
 ColorMoments = namedtuple('ColorMoments', ['mean', 'stdDeviation', 'skewness'], verbose=False)
@@ -71,7 +73,26 @@ def getMotion(currImage, prevImage):
     motion = float (motion / (i+1)*(j+1))
     return motion
 
-fileName = "datasample1.mov"
+def sortShots(shots):
+    maxKeyFrames = -1
+    maxAvgEntropyDiff = -1
+    maxAvgMotion = -1
+    for shot in shots:
+        if shot.keyFrames > maxKeyFrames :
+            maxKeyFrames = shot.keyFrames
+        if shot.avgEntropyDiff > maxAvgEntropyDiff :
+            maxAvgEntropyDif = shot.avgEntropyDiff
+        if shot.avgMotion > maxAvgMotion :
+            maxAvgMotion = shot.avgMotion
+
+    weights = []
+    for shot in shots:
+        weight = shot.keyFrames / float(maxKeyFrames) + shot.avgEntropyDiff / float(maxAvgEntropyDiff) + shot.avgMotion / float(maxAvgMotion)
+        weights.append((shot.shotNumber, weight))
+
+    print weights
+    weights = sorted(weights, key=lambda x: x[1])
+    print weights
 
 def main():
     videoCap = cv2.VideoCapture(fileName)
@@ -123,7 +144,7 @@ def main():
         i += 1
         success, image = videoCap.read()
         print i
-        if i==10:            
+        if i==40:            
             break
 
     meanEntropyDiff = sum(entropyDiff) / float(len(entropyDiff))
@@ -174,9 +195,11 @@ def main():
     shots.append(Shot(shotNumber, prevFrame, i-1, keyFrames, avgEntropyDiff, avgMotion))
     shotNumber += 1
 
+    orderedShots = sortShots(shots)
+    
     print 'Time taken to run =', time.clock() - t0, 'seconds' 
 
-    print shots
+    print 'Shots -' , shots
     print 'Entropy -', entropy, '\n'
     print 'HistogramDiff -', histogramDiff, '\n'
     print 'HistogramRatio -', histogramRatio, '\n'
