@@ -90,9 +90,12 @@ def sortShots(shots):
         weight = shot.keyFrames / float(maxKeyFrames) + shot.avgEntropyDiff / float(maxAvgEntropyDiff) + shot.avgMotion / float(maxAvgMotion)
         weights.append((shot.shotNumber, weight))
 
-    print weights
-    weights = sorted(weights, key=lambda x: x[1])
-    print weights
+    print 'Unsorted Weights -', weights
+    weights.sort(reverse=True, key=lambda x: x[1])
+    print 'Sorted Weights -', weights
+    order = [int(weight[0]) for weight in weights]
+    print 'Order -', order
+    return order
 
 def main():
     videoCap = cv2.VideoCapture(fileName)
@@ -144,7 +147,7 @@ def main():
         i += 1
         success, image = videoCap.read()
         print i
-        if i==40:            
+        if i==250:            
             break
 
     meanEntropyDiff = sum(entropyDiff) / float(len(entropyDiff))
@@ -195,7 +198,20 @@ def main():
     shots.append(Shot(shotNumber, prevFrame, i-1, keyFrames, avgEntropyDiff, avgMotion))
     shotNumber += 1
 
-    orderedShots = sortShots(shots)
+    shotsOrder = sortShots(shots)
+
+    trailerFrames = totalFrames/2
+    writeBit = [0] * len(shots)
+    for shotNo in shotsOrder:
+        shot = shots[shotNo]
+        shotFrames = shot.endingFrame - shot.startingFrame + 1
+        if shotFrames < trailerFrames:
+            writeBit[shotNo] = 1
+            trailerFrames -= shotFrames
+        if trailerFrames<=0:
+            break
+
+    print 'Write Bit -', writeBit
     
     print 'Time taken to run =', time.clock() - t0, 'seconds' 
 
