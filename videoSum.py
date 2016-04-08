@@ -111,11 +111,11 @@ def main():
 
     i = 0
     success, image = videoCap.read()
+    height = len(image)
+    width = len(image[0])
+    totalPixels = width * height
     while success:
-        height = len(image)
-        width = len(image[0])
         # print width, height
-        totalPixels = width * height
         grayImage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         # plt.imshow(grayImage, cmap = plt.get_cmap('gray'))
         # plt.show()
@@ -147,8 +147,9 @@ def main():
         i += 1
         success, image = videoCap.read()
         print i
-        if i==250:            
-            break
+        # Uncomment this for breaking early i.e. 100 frames
+        # if i==100:            
+        #     break
 
     meanEntropyDiff = sum(entropyDiff) / float(len(entropyDiff))
     meanHistogramRatio = sum(histogramRatio) / float(len(histogramRatio))
@@ -210,6 +211,35 @@ def main():
             trailerFrames -= shotFrames
         if trailerFrames<=0:
             break
+
+    print width, height
+    fourcc = cv2.cv.CV_FOURCC(*'XVID')
+    outputVideo = cv2.VideoWriter('./summary.avi',fourcc,25.0,(width,height))
+    inputVideo = cv2.VideoCapture(fileName)
+
+    for i in range(len(shots)):
+        if writeBit[i]==1:
+            j = shots[i].startingFrame
+            while j<= shots[i].endingFrame:
+                success, image = inputVideo.read()
+                if success:
+                    print 'writing'
+                    # plt.imshow(image)
+                    # plt.show()
+                    outputVideo.write(image)
+                else:
+                    print "Error in reading video"
+                j += 1
+        else:
+            j = shots[i].startingFrame
+            while j<= shots[i].endingFrame:
+                success, image = inputVideo.read()
+                if not success:
+                    print "Error in reading video"
+                j += 1
+
+    cv2.destroyAllWindows()
+    outputVideo.release()
 
     print 'Write Bit -', writeBit
     
